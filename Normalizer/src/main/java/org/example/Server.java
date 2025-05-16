@@ -15,8 +15,7 @@ public class Server {
                      new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8), true)) {
 
             for (int i = 1; i <= 1000; i++) {
-                String request = RequestGenerator.generateRandomRequest();  // Simulated data
-                System.out.println(request);
+                String request = RequestGenerator.generateRandomRequest() + "--no-reply";  // Simulated data
                 writer.println(request);
             }
 

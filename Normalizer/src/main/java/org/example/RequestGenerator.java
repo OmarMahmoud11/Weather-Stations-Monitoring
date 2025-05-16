@@ -22,16 +22,6 @@ public class RequestGenerator {
             int temperature = random.nextInt(150); // e.g., 0–149°F
             int windSpeed = random.nextInt(50); // 0–49 km/h
 
-//            String jsonMessage = "{\n" +
-//                    "    \"s_no\": " + serialNumber++ + ",\n" +
-//                    "    \"battery_status\": \"" + batteryStatus + "\",\n" +
-//                    "    \"status_timestamp\": " + timestamp + ",\n" +
-//                    "    \"weather\": {\n" +
-//                    "        \"humidity\": " + humidity + ",\n" +
-//                    "        \"temperature\": " + temperature + ",\n" +
-//                    "        \"wind_speed\": " + windSpeed + "\n" +
-//                    "    }\n" +
-//                    "}";
             String jsonMessage = String.format(
                     "{\"s_no\": %d, \"battery_status\": \"%s\", \"status_timestamp\": %d, \"weather\": {\"humidity\": %d, \"temperature\": %d, \"wind_speed\": %d}}",
                     serialNumber++, batteryStatus, timestamp, humidity, temperature, windSpeed

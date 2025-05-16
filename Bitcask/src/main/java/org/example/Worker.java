@@ -4,7 +4,6 @@ import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
-import java.time.Instant;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -328,7 +327,7 @@ public class Worker implements Callable<byte[]> {
                 for (Long key : inMemory.keySet()) {
                     byte[] valueBytes = readRequest(key);
                     String value = valueBytes != null ? new String(valueBytes) : "";
-                    writer.write(key + "," + value.replace(",", "\\,").replace("\n", "\\n"));
+                    writer.write(key + "," + value);
                     writer.newLine();
                 }
 
