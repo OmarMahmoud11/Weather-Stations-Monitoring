@@ -1,9 +1,6 @@
 package org.example;
 
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
@@ -20,16 +17,26 @@ public class Server {
         List<Future<byte[]>> futures = new ArrayList<>();
         List<byte[]> results = new ArrayList<>();
 
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
+        try (
+                BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));)
+        {
             String message;
             int k = 1;
 
             while ((message = reader.readLine()) != null) {
                 if (message.isEmpty()) continue;
 
-                if (message.startsWith("w ") || message.startsWith("r ")) {
-                    Future<byte[]> future = executor.submit(new Worker(message));
-                    futures.add(future);
+                if (message.startsWith("w ") || message.startsWith("r ") || message.startsWith("a ")) {
+
+                    boolean expectsReply = !message.contains("--no-reply");
+                    String cleanedMessage = message.replace("--no-reply", "").trim();
+
+                    Future<byte[]> future = executor.submit(new Worker(cleanedMessage));
+
+                    if(expectsReply){
+                        futures.add(future);
+                    }
 
                     if (k % 300 == 0) {
                         Future<byte[]> controlFuture = executor.submit(new Worker("c"));
@@ -44,15 +51,13 @@ public class Server {
 
             for (Future<byte[]> future : futures) {
                 try {
-                    results.add(future.get());
+                    byte[] result = future.get();
+                    if (result != null) {
+                        writer.write(new String(result) + "\n");
+                        writer.flush();
+                    }
                 } catch (Exception e) {
                     e.printStackTrace();
-                }
-            }
-
-            for (byte[] result : results) {
-                if (result != null) {
-                    System.out.println(new String(result));
                 }
             }
 

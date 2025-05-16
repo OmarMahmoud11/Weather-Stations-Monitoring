@@ -1,12 +1,10 @@
 package org.example;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -320,21 +318,62 @@ public class Worker implements Callable<byte[]> {
         }
     }
 
+    private byte[] saveAllKeysAndValues(String path, String fileName){
+        lock.readLock().lock();
+        try {
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(path + fileName))) {
+                writer.write("Key,Value");
+                writer.newLine();
+
+                for (Long key : inMemory.keySet()) {
+                    byte[] valueBytes = readRequest(key);
+                    String value = valueBytes != null ? new String(valueBytes) : "";
+                    writer.write(key + "," + value.replace(",", "\\,").replace("\n", "\\n"));
+                    writer.newLine();
+                }
+
+                System.out.println("Data exported to " + fileName);
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            lock.readLock().unlock();
+        }
+        String str = "succeed";
+
+        return str.getBytes(StandardCharsets.UTF_8);
+    }
+
     @Override
     public byte[] call(){
-        if(request.charAt(0) == 'w'){
-            String[] requestParts = request.split(" ", 3);
-            long key = Long.parseLong(requestParts[1]);
-            String value = requestParts[2];
-            writeRequest(key, value);
-        }
-        else if(request.charAt(0) == 'r'){
-            String[] requestParts = request.split(" ", 2);
-            long key = Long.parseLong(requestParts[1]);
-            return readRequest(key);
-        }
-        else if(request.charAt(0) == 'c'){
-            compaction();
+        char req = request.charAt(0);
+        String[] requestParts;
+        long key;
+        switch (req){
+            // WRITE REQUEST
+            case 'w':
+                requestParts = request.split(" ", 3);
+                key = Long.parseLong(requestParts[1]);
+                String value = requestParts[2];
+                writeRequest(key, value);
+                break;
+
+            // READ REQUEST
+            case 'r':
+                requestParts = request.split(" ", 2);
+                key = Long.parseLong(requestParts[1]);
+                return readRequest(key);
+
+            // COMPACTION REQUEST
+            case 'c':
+                compaction();
+                break;
+
+            // SAVE ALL KEYS AND VALUES TO A FILE NAME WITH THE TIMESTAMP OF THE CURRENT TIME WITH EXTENSION .csv
+            case 'a':
+                requestParts = request.split(" ",3);
+                return saveAllKeysAndValues(requestParts[1], requestParts[2]);
         }
         return null;
     }
