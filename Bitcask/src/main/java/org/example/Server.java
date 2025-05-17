@@ -22,7 +22,6 @@ public class Server {
                 BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));)
         {
             String message;
-            int k = 1;
 
             while ((message = reader.readLine()) != null) {
                 if (message.isEmpty()) continue;
@@ -37,13 +36,6 @@ public class Server {
                     if(expectsReply){
                         futures.add(future);
                     }
-
-                    if (k % 300 == 0) {
-                        Future<byte[]> controlFuture = executor.submit(new Worker("c"));
-                        futures.add(controlFuture);
-                    }
-
-                    k++;
                 } else {
                     System.err.println("Unrecognized message format: " + message);
                 }
@@ -72,7 +64,7 @@ public class Server {
 
     public static void main(String args[]) throws IOException {
         Properties config = new Properties();
-        FileInputStream fis = new FileInputStream("src/main/resources/system.properties");
+        FileInputStream fis = new FileInputStream("/home/omar-mahmoud/DDIA/project/Weather-Stations-Monitoring/Bitcask/src/main/resources/system.properties");
         config.load(fis);
 
         int serverPort = Integer.parseInt(config.getProperty("server.port"));
@@ -82,7 +74,12 @@ public class Server {
 
         try (ServerSocket serverSocket = new ServerSocket(serverPort)) {
             System.out.println("Bitcask Server started. Listening on port " + serverPort);
-            new Worker(0, logsPath, hintPath);
+
+            Worker worker = new Worker(0, logsPath, hintPath);
+
+            // Poll every 5 seconds (5000 ms)
+            LogPathTracker tracker = new LogPathTracker(logsPath, 5000, 10);
+            tracker.start();
 
             while (true) {
                 Socket clientSocket = serverSocket.accept();

@@ -7,7 +7,8 @@ public class RequestGenerator {
 
     public static String generateRandomRequest() {
         // Randomly decide between write (w) and read (r)
-        boolean isWrite = random.nextBoolean();
+//        boolean isWrite = random.nextBoolean();
+        boolean isWrite = true;
         long key = random.nextInt(100) + 1; // Random key between 1 and 100
 
         if (isWrite) {
@@ -28,7 +29,7 @@ public class RequestGenerator {
             );
 
 
-            return "w " + key + " " + jsonMessage;
+            return key + " " + jsonMessage;
         } else {
             return "r " + key;
         }
