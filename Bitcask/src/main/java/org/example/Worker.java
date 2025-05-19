@@ -319,29 +319,30 @@ public class Worker implements Callable<byte[]> {
 
     private byte[] saveAllKeysAndValues(String path, String fileName){
         lock.readLock().lock();
+        ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
         try {
-            try (BufferedWriter writer = new BufferedWriter(new FileWriter(path + fileName))) {
+            try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(byteOut, StandardCharsets.UTF_8))) {
                 writer.write("Key,Value");
                 writer.newLine();
 
                 for (Long key : inMemory.keySet()) {
                     byte[] valueBytes = readRequest(key);
-                    String value = valueBytes != null ? new String(valueBytes) : "";
+                    String value = valueBytes != null ? new String(valueBytes, StandardCharsets.UTF_8) : "";
                     writer.write(key + "," + value);
                     writer.newLine();
                 }
 
-                System.out.println("Data exported to " + fileName);
+                writer.flush(); // Important: flush the writer to ensure all data is written to the stream
             }
+
 
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
             lock.readLock().unlock();
         }
-        String str = "succeed";
 
-        return str.getBytes(StandardCharsets.UTF_8);
+        return byteOut.toByteArray();
     }
 
     @Override

@@ -64,7 +64,7 @@ public class Server {
 
     public static void main(String args[]) throws IOException {
         Properties config = new Properties();
-        FileInputStream fis = new FileInputStream("/home/omar-mahmoud/DDIA/project/Weather-Stations-Monitoring/Bitcask/src/main/resources/system.properties");
+        FileInputStream fis = new FileInputStream("system.properties");
         config.load(fis);
 
         int serverPort = Integer.parseInt(config.getProperty("server.port"));

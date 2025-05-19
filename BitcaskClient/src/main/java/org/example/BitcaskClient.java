@@ -3,6 +3,8 @@ package org.example;
 import java.io.*;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
@@ -41,28 +43,66 @@ public class BitcaskClient {
     private static void viewAll() {
         try (Socket socket = new Socket(SERVER_HOST, SERVER_PORT);
              BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8));
-             BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8))) {
+             InputStream inputStream = socket.getInputStream()) {
 
             long timestamp = Instant.now().getEpochSecond();
             String fileName = timestamp + ".csv";
+            Path outputPath = Paths.get(PATH + fileName);
 
             System.out.println("Sending...");
             writer.write("a " + PATH + " " + fileName + "\n");
             writer.flush();
-            socket.shutdownOutput();
+            socket.shutdownOutput(); // Optional, tells server no more data is being sent
 
-            String line = reader.readLine();
-            if(line.equals("succeed")) {
-                System.out.println("Succeeded '_'");
-                System.out.println("Written to file: " + fileName);
+            // Receive byte[] data and write to file
+            try (FileOutputStream fileOut = new FileOutputStream(outputPath.toFile())) {
+                byte[] buffer = new byte[4096];
+                int bytesRead;
+                while ((bytesRead = inputStream.read(buffer)) != -1) {
+                    fileOut.write(buffer, 0, bytesRead);
+                }
             }
-            else{
-                System.out.println("Failed to write the file.");
-            }
+
+            System.out.println("Succeeded '_'");
+            System.out.println("Written to file: " + fileName);
+
         } catch (IOException e) {
             e.printStackTrace();
+            System.out.println("Failed to write the file.");
         }
     }
+
+    private static void viewAllWithThread(long timestamp, int threadId) {
+        try (Socket socket = new Socket(SERVER_HOST, SERVER_PORT);
+             BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8));
+             InputStream inputStream = socket.getInputStream()) {
+
+            String fileName = timestamp + "_thread_" + threadId + ".csv";
+            Path outputPath = Paths.get(PATH + fileName);
+
+            System.out.println("Sending...");
+            writer.write("a " + PATH + " " + fileName + "\n");
+            writer.flush();
+            socket.shutdownOutput(); // Optional, tells server no more data is being sent
+
+            // Receive byte[] data and write to file
+            try (FileOutputStream fileOut = new FileOutputStream(outputPath.toFile())) {
+                byte[] buffer = new byte[4096];
+                int bytesRead;
+                while ((bytesRead = inputStream.read(buffer)) != -1) {
+                    fileOut.write(buffer, 0, bytesRead);
+                }
+            }
+
+            System.out.println("Succeeded '_'");
+            System.out.println("Written to file: " + fileName);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.out.println("Failed to write the file.");
+        }
+    }
+
 
     private static void viewKey(String key) {
         try (Socket socket = new Socket(SERVER_HOST, SERVER_PORT);
@@ -92,27 +132,7 @@ public class BitcaskClient {
         for (int i = 0; i < numClients; i++) {
             final int threadId = i + 1;
             executor.submit(() -> {
-                try (Socket socket = new Socket(SERVER_HOST, SERVER_PORT);
-                     BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8));
-                     BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8))) {
-
-                    String fileName = timestamp + "_thread_" + threadId + ".csv";
-
-                    writer.write("a" + " " + PATH + " " + fileName + "\n");
-                    writer.flush();
-                    socket.shutdownOutput();
-
-                    String line = reader.readLine();
-                    if ("succeed".equals(line)) {
-                        System.out.println("Thread " + threadId + ": Succeeded. Written to " + fileName);
-                    } else {
-                        System.out.println("Thread " + threadId + ": Failed to write file.");
-                    }
-
-                } catch (IOException e) {
-                    System.out.println("Thread " + threadId + ": Exception occurred");
-                    e.printStackTrace();
-                }
+                viewAllWithThread(timestamp, threadId);
             });
         }
 
