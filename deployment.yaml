@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bitcask-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bitcask-server
+  template:
+    metadata:
+      labels:
+        app: bitcask-server
+    spec:
+      containers:
+        - name: bitcask-server
+          image: omarmahmoud/bitcask-server:latest  # Use your Docker Hub image name
+          ports:
+            - containerPort: 5000
+          volumeMounts:
+            - name: logs-volume
+              mountPath: /app/logs
+            - name: hints-volume
+              mountPath: /app/hints
+          env:
+            - name: JAVA_OPTS
+              value: "-Djava.util.logging.config.file=system.properties"
+      volumes:
+        - name: logs-volume
+          emptyDir: {}  # or use a PersistentVolumeClaim
+        - name: hints-volume
+          emptyDir: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bitcask-service
+spec:
+  selector:
+    app: bitcask-server
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 5000
+  type: ClusterIP
